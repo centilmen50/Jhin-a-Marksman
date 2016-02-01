@@ -34,30 +34,28 @@ namespace JhinaMarksman
         public static Spell.Skillshot R1;
         static Item Healthpot;
         public static DamageIndicator Indicator;
-        public static Tracker Tracks;
         public static readonly string[] JungleMobsList = { "SRU_Red", "SRU_Blue", "SRU_Dragon", "SRU_Baron", "SRU_Gromp", "SRU_Murkwolf", "SRU_Razorbeak", "SRU_Krug", "Sru_Crab" };
-        public static Menu Menu, ComboSettings, HarassSettings, ClearSettings, AutoSettings, DrawMenu, Predictions, Items, Tracker, Skin;
+        public static Menu Menu, ComboSettings, HarassSettings, ClearSettings, AutoSettings, DrawMenu, Items, Skin;
         
         private static void Loading_OnLoadingComplete(EventArgs args)
         {
-        //    if (Player.Instance.Hero != Champion.Jhin)//düzenle
-          //  {
-            //    return;
-            //}
+           if (Player.Instance.Hero != Champion.Jhin)
+            {
+                return;
+            }
             Teleport.OnTeleport += Teleport_OnTeleport;
             
             Indicator = new DamageIndicator();
-            Tracks = new JhinaMarksman.Tracker();
             Healthpot = new Item(2003, 0);
-            Q = new Spell.Targeted(SpellSlot.Q, 700);
-            W = new Spell.Skillshot(SpellSlot.W, 2500, SkillShotType.Linear,250 , 3000, 60)
+            Q = new Spell.Targeted(SpellSlot.Q, 550);
+            W = new Spell.Skillshot(SpellSlot.W, 3000, SkillShotType.Linear,250 , 1200, 60)
             {
                 MinimumHitChance = HitChance.Medium,
-                AllowedCollisionCount = 0
+                AllowedCollisionCount = int.MaxValue
             };
-            E = new Spell.Skillshot(SpellSlot.E, 800, SkillShotType.Circular, 1200, 3000, 1);
-            R = new Spell.Skillshot(SpellSlot.R, 4000, SkillShotType.Cone, 250, 2500, 500);
-            R1 = new Spell.Skillshot(SpellSlot.R, 4000, SkillShotType.Linear, 250, int.MaxValue, 75); 
+            E = new Spell.Skillshot(SpellSlot.E, 750, SkillShotType.Circular, 250, 3000, 1);
+            R = new Spell.Skillshot(SpellSlot.R, 25000, SkillShotType.Cone, 250, 1200, 500);
+            R1 = new Spell.Skillshot(SpellSlot.R, 25000, SkillShotType.Linear, 250, 1200, 60); 
 
             Menu = MainMenu.AddMenu("Jhin a Marksman", "JhinaMarksman");
 
@@ -134,14 +132,6 @@ namespace JhinaMarksman
             Items.Add("useYoumu", new CheckBox("Use Youmu"));
             Items.Add("useQSS", new CheckBox("Use QSS"));
 
-            Predictions = Menu.AddSubMenu("Prediction Settings", "PredictionSettings");
-            var Style = Predictions.Add("style", new Slider("Min Prediction", 1, 0, 2));
-            Style.OnValueChange += delegate
-            {
-                Style.DisplayName = "Min Prediction: " + new[] { "Low", "Medium", "High" }[Style.CurrentValue];
-            };
-            Style.DisplayName = "Min Prediction: " + new[] { "Low", "Medium", "High" }[Style.CurrentValue];
-
             DrawMenu = Menu.AddSubMenu("Drawing Settings");
             DrawMenu.Add("drawRange", new CheckBox("Draw AA Range",false));
             DrawMenu.Add("drawQ", new CheckBox("Draw Q Range"));
@@ -157,10 +147,6 @@ namespace JhinaMarksman
             DrawMenu.AddSeparator();
             DrawMenu.AddLabel("Recall Tracker");
             DrawMenu.Add("draw.Recall", new CheckBox("Chat Print",false));
-
-            Tracker = Menu.AddSubMenu("Tracker(not working now)");
-            Tracker.Add("draw.Cooldowns", new CheckBox("Draw Cooldowns"));
-            Tracker.Add("draw.Disable", new CheckBox("Disable Draw"));
 
             Game.OnTick += Game_OnTick;
             Game.OnUpdate += OnGameUpdate;
@@ -208,33 +194,13 @@ namespace JhinaMarksman
         private static void Game_OnTick(EventArgs args)
         {
 
-          //  foreach (var buff in Player.Instance.Buffs)
-            //{
-              //  Chat.Print("BuffName: {0}, Stacks: {1}", buff.Name, buff.Count); BUFF COUNT UNUTMA
-           // }
-
             var HPpot = Items["useHP"].Cast<CheckBox>().CurrentValue;
             var HPv = Items["useHPv"].Cast<Slider>().CurrentValue;
             Orbwalker.ForcedTarget = null;
 
             if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
             {
-                var style = Predictions["style"].Cast<Slider>().CurrentValue;
-                switch (style)
-                {
-                    case 0:
-                        ComboLow();
-                        break;
-                    case 1:
-                        ComboMedium();
-                        break;
-                    case 2:
-                        ComboHigh();
-                        break;
-                    default:
-                        ComboMedium();
-                        break;
-                }
+                ComboMedium();
             }
             if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Harass))
             {
@@ -259,6 +225,10 @@ namespace JhinaMarksman
             Auto();
             KS();
             AutoW();
+            if(_Player.Spellbook.ActiveSpellSlot == SpellSlot.R)
+            {
+                ultimate = true;
+            }
             if (HPpot && _Player.HealthPercent < HPv)
             {
                 if (Item.HasItem(Healthpot.Id) && Item.CanUseItem(Healthpot.Id) && !_Player.HasBuff("RegenerationPotion"))
@@ -267,8 +237,9 @@ namespace JhinaMarksman
                 }
             }
             if (ultimate == true)
-            {               
-                for(int i = 0; i <= 4; i++)
+            {
+                Orbwalker.DisableMovement = true;
+                for (int i = 0; i <= 4; i++)
                 {
                     var target = TargetSelector.GetTarget(R1.Range, DamageType.Physical);
                     R1.Cast(target);
@@ -280,6 +251,10 @@ namespace JhinaMarksman
                     }
                 }
                 
+            }
+            if (ultimate == false)
+            {
+                Orbwalker.DisableMovement = false;
             }
         }
 
@@ -419,11 +394,11 @@ namespace JhinaMarksman
                             a =>
                                 a.IsValidTarget(Q.Range))
                         .FirstOrDefault(minion => EntityManager.MinionsAndMonsters.EnemyMinions.Count(
-                            a => a.Distance(minion) < 300) > qcount);
+                            a => a.Distance(minion) < 400) >= qcount);
 
             if (unit != null && !unit.IsDead && !unit.IsZombie)
             {
-                if (useq)
+                if (useq && Q.IsReady())
                 {
                     Q.Cast(unit);
                 }
@@ -432,7 +407,7 @@ namespace JhinaMarksman
                                a => a.IsValidTarget(_Player.AttackRange))
                                .OrderBy(TargetSelector.GetPriority))
             {
-                if(autopassive && _Player.HasBuff("sonvuruşpasif"))
+                if(autopassive && _Player.HasBuff("jhinpassiveattackbuff"))
                 {                   
                     Orbwalker.ForcedTarget = enemy;
                     Harass();
@@ -460,7 +435,7 @@ namespace JhinaMarksman
             {
                 // W out of range
                 if (HarassSettings["useWHarass"].Cast<CheckBox>().CurrentValue && W.IsReady() &&
-                    targetQ.Distance(_Player) > _Player.AttackRange &&
+                    targetW.Distance(_Player) > _Player.AttackRange &&
                     targetW.IsValidTarget(W.Range) && _Player.ManaPercent > Wmana)
                 {
                     W.Cast(targetW);
@@ -494,106 +469,42 @@ namespace JhinaMarksman
         
         public static void KS()
         {// KİLLSTEAL START
-            var targetW = TargetSelector.GetTarget(W.Range, DamageType.Physical);      
-            var wPred = W.GetPrediction(targetW);
+            var targetQ = TargetSelector.GetTarget(Q.Range, DamageType.Physical);
+            var targetW = TargetSelector.GetTarget(W.Range, DamageType.Mixed);      
             var targetR = TargetSelector.GetTarget(R.Range, DamageType.Physical);
            
-            if (ComboSettings["useWCombo"].Cast<CheckBox>().CurrentValue &&
-                wPred.HitChance >= HitChance.Medium && W.IsReady() && targetW.IsValidTarget(W.Range) &&
+            if (ComboSettings["useWCombo"].Cast<CheckBox>().CurrentValue && W.IsReady() && targetW.IsValidTarget(W.Range) &&
                 WDamage(targetW) >= targetW.Health)
             {
                 W.Cast(targetW);
             }
-            if (ComboSettings["useRCombo"].Cast<CheckBox>().CurrentValue && targetR.IsValidTarget(R.Range) && R.IsReady() && RDamage(targetR) >= targetR.Health+300)
+            if (ComboSettings["useQCombo"].Cast<CheckBox>().CurrentValue && Q.IsReady() && targetQ.IsValidTarget(Q.Range) &&
+                QDamage(targetQ) >= targetQ.Health)
+            {
+                W.Cast(targetW);
+            }
+            if (ComboSettings["useRCombo"].Cast<CheckBox>().CurrentValue && targetR.IsValidTarget(R.Range) && R.IsReady() && RDamage(targetR) >= targetR.Health)
             {
                 R.Cast(targetR);
                 ultimate = true;
             }
-            
-            
-                
+
+
+
         }//KİLLSTEAL END
-        public static void ComboLow()
-        {//COMBO LOW PREDİCTİON START
-            var targetQ = TargetSelector.GetTarget(Q.Range, DamageType.Physical);
-            var qcount = HarassSettings["useQEnemyCount"].Cast<Slider>().CurrentValue;
-            var targetW = TargetSelector.GetTarget(W.Range, DamageType.Physical);
-            var targetE = TargetSelector.GetTarget(E.Range, DamageType.Physical);
-            var wPred = W.GetPrediction(targetW);
-            var mtarget = TargetSelector.GetTarget(700, DamageType.Physical);
-            var useYoumu = Items["useYoumu"].Cast<CheckBox>().CurrentValue;
-            var useMahvolmus = Items["useBOTRK"].Cast<CheckBox>().CurrentValue;
-            var useMahvolmusEV = Items["useBotrkEnemyHP"].Cast<Slider>().CurrentValue;
-            var useMahvolmusHPV = Items["useBotrkMyHP"].Cast<Slider>().CurrentValue;
-            Orbwalker.ForcedTarget = null;
 
-            if (Orbwalker.IsAutoAttacking) return;
-
-            if (useMahvolmus && Item.HasItem(3153) && Item.CanUseItem(3153) && Item.HasItem(3144) && Item.CanUseItem(3144) && mtarget.HealthPercent < useMahvolmusEV && _Player.HealthPercent < useMahvolmusHPV)
-                Item.UseItem(3153, mtarget);
-            Item.UseItem(3144, mtarget);
-            
-            if (useYoumu && Item.HasItem(3142) && Item.CanUseItem(3142))
-                Item.UseItem(3142);
-
-
-            // E LOGİC
-            if (ComboSettings["useECombo"].Cast<CheckBox>().CurrentValue && (targetE.HasBuffOfType(BuffType.Snare) || targetE.HasBuffOfType(BuffType.Stun) || targetE.HasBuffOfType(BuffType.Fear) || targetE.HasBuffOfType(BuffType.Knockup) || targetE.HasBuffOfType(BuffType.Taunt)))
-            {
-                E.Cast(targetE);
-            }
-
-            if (ComboSettings["useEDistance"].Cast<CheckBox>().CurrentValue && targetW.Distance(_Player) < ComboSettings["EMaxDistance"].Cast<Slider>().CurrentValue)
-            {
-                E.Cast(targetW);
-            }
-
-            // W LOGİC
-            if (ComboSettings["useWCombo"].Cast<CheckBox>().CurrentValue && !ComboSettings["useWComboOnlyCC"].Cast<CheckBox>().CurrentValue && W.IsReady() && targetW.Distance(_Player) > _Player.AttackRange && wPred.HitChance >= HitChance.Low &&
-                targetW.IsValidTarget(W.Range))
-            {
-                W.Cast(targetW);            
-            }
-            else if (ComboSettings["useWComboOnylCC"].Cast<CheckBox>().CurrentValue && W.IsReady() && wPred.HitChance >= HitChance.Low && targetW.IsValidTarget(W.Range))
-            {
-                if(targetW.IsAttackingPlayer)
-                {
-                    W.Cast(targetW);
-                }
-            }
-
-            // Q LOGİC
-            if (targetQ != null)
-            {
-                foreach (var enemy in EntityManager.Heroes.Enemies.Where(
-                                a => a.IsValidTarget(Q.Range))
-                                .OrderBy(TargetSelector.GetPriority))
-                {
-                    if (ComboSettings["useQCombo"].Cast<CheckBox>().CurrentValue && enemy.CountEnemiesInRange(Q.Range) >= qcount &&
-                     Q.IsReady() && targetQ.IsValidTarget(Q.Range))
-                    {
-                        Q.Cast(targetQ);
-                    }
-                }
-            }
-
-        } //COMBO LOW PREDİCTİON END
         public static void ComboMedium()
         {//COMBO MEDİUM PREDİCTİON START    
             var targetQ = TargetSelector.GetTarget(Q.Range, DamageType.Physical);
             var qcount = HarassSettings["useQEnemyCount"].Cast<Slider>().CurrentValue;
             var targetE = TargetSelector.GetTarget(E.Range, DamageType.Physical);
             var targetW = TargetSelector.GetTarget(W.Range, DamageType.Physical);
-            var rtarget = TargetSelector.GetTarget(3000, DamageType.Physical);
-            var wPred = W.GetPrediction(targetW);
+            var rtarget = TargetSelector.GetTarget(R.Range, DamageType.Physical);
             var mtarget = TargetSelector.GetTarget(700, DamageType.Physical);
             var useYoumu = Items["useYoumu"].Cast<CheckBox>().CurrentValue;
             var useMahvolmus = Items["useBOTRK"].Cast<CheckBox>().CurrentValue;
             var useMahvolmusEV = Items["useBotrkEnemyHP"].Cast<Slider>().CurrentValue;
             var useMahvolmusHPV = Items["useBotrkMyHP"].Cast<Slider>().CurrentValue;
-
-            Orbwalker.ForcedTarget = null;
-
 
             if (Orbwalker.IsAutoAttacking) return;
 
@@ -617,14 +528,14 @@ namespace JhinaMarksman
             }
 
             // W LOGİC
-            if (ComboSettings["useWCombo"].Cast<CheckBox>().CurrentValue && !ComboSettings["useWComboOnlyCC"].Cast<CheckBox>().CurrentValue && W.IsReady() && targetW.Distance(_Player) > _Player.AttackRange && wPred.HitChance >= HitChance.Medium &&
+            if (ComboSettings["useWCombo"].Cast<CheckBox>().CurrentValue &&  W.IsReady() && targetW.Distance(_Player) > _Player.AttackRange &&
                 targetW.IsValidTarget(W.Range))
             {
                 W.Cast(targetW);
             }
-            else if (ComboSettings["useWComboOnylCC"].Cast<CheckBox>().CurrentValue && W.IsReady() && wPred.HitChance >= HitChance.Medium && targetW.IsValidTarget(W.Range))
+            else if (ComboSettings["useWComboOnylCC"].Cast<CheckBox>().CurrentValue && W.IsReady() && targetW.IsValidTarget(W.Range))
             {
-                if (targetW.IsAttackingPlayer)
+                if (targetW.HasBuff("jhinespotteddebuff"))
                 {
                     W.Cast(targetW);
                 }
@@ -633,87 +544,15 @@ namespace JhinaMarksman
             // Q LOGİC
             if (targetQ != null)
             {
-                foreach (var enemy in EntityManager.Heroes.Enemies.Where(
-                                a => a.IsValidTarget(Q.Range))
-                                .OrderBy(TargetSelector.GetPriority))
-                {
-                    if (ComboSettings["useQCombo"].Cast<CheckBox>().CurrentValue && enemy.CountEnemiesInRange(Q.Range) >= qcount &&
+                    if (ComboSettings["useQCombo"].Cast<CheckBox>().CurrentValue &&
                      Q.IsReady() && targetQ.IsValidTarget(Q.Range))
                     {
                         Q.Cast(targetQ);
                     }
-                }
             }
 
         } //COMBO MEDİUM PREDİCTİON END
-        public static void ComboHigh()
-        {//COMBO HİGH PREDİCTİON START
-            var targetQ = TargetSelector.GetTarget(Q.Range, DamageType.Physical);
-            var qcount = HarassSettings["useQEnemyCount"].Cast<Slider>().CurrentValue;
-            var targetW = TargetSelector.GetTarget(W.Range, DamageType.Physical);
-            var targetE = TargetSelector.GetTarget(E.Range, DamageType.Physical);
-            var rtarget = TargetSelector.GetTarget(3000, DamageType.Physical);
-            var wPred = W.GetPrediction(targetW);
-            var mtarget = TargetSelector.GetTarget(700, DamageType.Physical);
-            var useYoumu = Items["useYoumu"].Cast<CheckBox>().CurrentValue;
-            var useMahvolmus = Items["useBOTRK"].Cast<CheckBox>().CurrentValue;
-            var useMahvolmusEV = Items["useBotrkEnemyHP"].Cast<Slider>().CurrentValue;
-            var useMahvolmusHPV = Items["useBotrkMyHP"].Cast<Slider>().CurrentValue;
-
-            Orbwalker.ForcedTarget = null;
-
-            if (Orbwalker.IsAutoAttacking) return;
-
-
-            if (useMahvolmus && Item.HasItem(3153) && Item.CanUseItem(3153) && Item.HasItem(3144) && Item.CanUseItem(3144) && mtarget.HealthPercent < useMahvolmusEV && _Player.HealthPercent < useMahvolmusHPV)
-                Item.UseItem(3153, mtarget);
-            Item.UseItem(3144, mtarget);
-
-            if (useYoumu && Item.HasItem(3142) && Item.CanUseItem(3142))
-                Item.UseItem(3142);
-
-            // E LOGİC
-
-            if (ComboSettings["useECombo"].Cast<CheckBox>().CurrentValue && (targetE.HasBuffOfType(BuffType.Snare) || targetE.HasBuffOfType(BuffType.Stun) || targetE.HasBuffOfType(BuffType.Fear) || targetE.HasBuffOfType(BuffType.Knockup) || targetE.HasBuffOfType(BuffType.Taunt)))
-            {
-                E.Cast(targetE);
-            }
-
-            if (ComboSettings["useEDistance"].Cast<CheckBox>().CurrentValue && targetE.Distance(_Player) < ComboSettings["EMaxDistance"].Cast<Slider>().CurrentValue)
-            {
-                E.Cast(targetE);
-            }
-
-            // W LOGİC
-            if (ComboSettings["useWCombo"].Cast<CheckBox>().CurrentValue && !ComboSettings["useWComboOnlyCC"].Cast<CheckBox>().CurrentValue && W.IsReady() && targetW.Distance(_Player) > _Player.AttackRange && wPred.HitChance >= HitChance.High &&
-               targetW.IsValidTarget(W.Range))
-            {
-                W.Cast(targetW);
-            }
-            else if (ComboSettings["useWComboOnylCC"].Cast<CheckBox>().CurrentValue && W.IsReady() && wPred.HitChance >= HitChance.High && targetW.IsValidTarget(W.Range))
-            {
-                if (targetW.IsAttackingPlayer)
-                {
-                    W.Cast(targetW);
-                }
-            }
-
-            // Q LOGİC
-            if (targetQ != null)
-            {
-                foreach (var enemy in EntityManager.Heroes.Enemies.Where(
-                                a => a.IsValidTarget(Q.Range))
-                                .OrderBy(TargetSelector.GetPriority))
-                {
-                    if (ComboSettings["useQCombo"].Cast<CheckBox>().CurrentValue && enemy.CountEnemiesInRange(Q.Range) >= qcount &&
-                     Q.IsReady() && targetQ.IsValidTarget(Q.Range))
-                    {
-                        Q.Cast(targetQ);
-                    }
-                }
-            }
-
-        } //COMBO HİGH PREDİCTİON END
+       
         //DAMAGE HESAP
         public static int QDamage(Obj_AI_Base target)
         {

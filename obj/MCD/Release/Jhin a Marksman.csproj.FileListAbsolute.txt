@@ -1,0 +1,22 @@
+C:\Users\Mertss\Desktop\buddy\Jhin a Marksman\Jhin a Marksman\bin\Release\Jhin a Marksman.exe.config
+C:\Users\Mertss\Desktop\buddy\Jhin a Marksman\Jhin a Marksman\bin\Release\Jhin a Marksman.exe
+C:\Users\Mertss\Desktop\buddy\Jhin a Marksman\Jhin a Marksman\bin\Release\EloBuddy.dll
+C:\Users\Mertss\Desktop\buddy\Jhin a Marksman\Jhin a Marksman\bin\Release\EloBuddy.SDK.dll
+C:\Users\Mertss\Desktop\buddy\Jhin a Marksman\Jhin a Marksman\bin\Release\SharpDX.Direct3D9.dll
+C:\Users\Mertss\Desktop\buddy\Jhin a Marksman\Jhin a Marksman\bin\Release\SharpDX.dll
+C:\Users\Mertss\Desktop\buddy\Jhin a Marksman\Jhin a Marksman\bin\Release\Newtonsoft.Json.dll
+C:\Users\Mertss\Desktop\buddy\Jhin a Marksman\Jhin a Marksman\obj\MCD\Release\JhinaMarksman.Properties.Resources.resources
+C:\Users\Mertss\Desktop\buddy\Jhin a Marksman\Jhin a Marksman\obj\MCD\Release\Jhin a Marksman.csproj.GenerateResource.Cache
+C:\Users\Mertss\Desktop\buddy\Jhin a Marksman\Jhin a Marksman\obj\MCD\Release\Jhin a Marksman.exe
+C:\Users\Mertss\Desktop\buddy\Jhin a Marksman\Jhin a Marksman\obj\MCD\Release\Jhin a Marksman.csprojResolveAssemblyReference.cache
+C:\Users\Mertss\Desktop\buddy\My Addons\Jhin a Marksman\Jhin a Marksman\bin\Release\Jhin a Marksman.exe.config
+C:\Users\Mertss\Desktop\buddy\My Addons\Jhin a Marksman\Jhin a Marksman\bin\Release\Jhin a Marksman.exe
+C:\Users\Mertss\Desktop\buddy\My Addons\Jhin a Marksman\Jhin a Marksman\bin\Release\EloBuddy.dll
+C:\Users\Mertss\Desktop\buddy\My Addons\Jhin a Marksman\Jhin a Marksman\bin\Release\EloBuddy.SDK.dll
+C:\Users\Mertss\Desktop\buddy\My Addons\Jhin a Marksman\Jhin a Marksman\bin\Release\SharpDX.Direct3D9.dll
+C:\Users\Mertss\Desktop\buddy\My Addons\Jhin a Marksman\Jhin a Marksman\bin\Release\SharpDX.dll
+C:\Users\Mertss\Desktop\buddy\My Addons\Jhin a Marksman\Jhin a Marksman\bin\Release\Newtonsoft.Json.dll
+C:\Users\Mertss\Desktop\buddy\My Addons\Jhin a Marksman\Jhin a Marksman\obj\MCD\Release\Jhin a Marksman.csprojResolveAssemblyReference.cache
+C:\Users\Mertss\Desktop\buddy\My Addons\Jhin a Marksman\Jhin a Marksman\obj\MCD\Release\JhinaMarksman.Properties.Resources.resources
+C:\Users\Mertss\Desktop\buddy\My Addons\Jhin a Marksman\Jhin a Marksman\obj\MCD\Release\Jhin a Marksman.csproj.GenerateResource.Cache
+C:\Users\Mertss\Desktop\buddy\My Addons\Jhin a Marksman\Jhin a Marksman\obj\MCD\Release\Jhin a Marksman.exe
