@@ -490,7 +490,7 @@ namespace JhinaMarksman
             {
                 Q.Cast(targetQ);
             }
-            if (ComboSettings["useRCombo"].Cast<CheckBox>().CurrentValue && targetR.IsValidTarget(R.Range) && R.IsReady() && RDamage(targetR) >= targetR.Health)
+            if (ComboSettings["useRCombo"].Cast<CheckBox>().CurrentValue && targetR.IsValidTarget(R.Range) && !targetR.IsValidTarget(W.Range) && R.IsReady() && RDamage(targetR) >= targetR.Health)
             {
                 R.Cast(targetR);
                 ultimate = true;
