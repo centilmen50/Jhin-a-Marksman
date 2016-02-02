@@ -66,8 +66,9 @@ namespace JhinaMarksman
             ComboSettings.Add("useWComboOnlyCC", new CheckBox("Use W Only CC", false));
             ComboSettings.Add("useECombo", new CheckBox("Use E"));
             ComboSettings.Add("useEDistance", new CheckBox("Auto E for Enemy Distance"));
-            ComboSettings.Add("EMaxDistance", new Slider("Enemy Distance < ", 200, 100, 900));
+            ComboSettings.Add("EMaxDistance", new Slider("Enemy Distance < ", 400, 100, 900));
             ComboSettings.Add("useRCombo", new CheckBox("Use R"));
+            ComboSettings.Add("RKey", new KeyBind("Press Key to Activate Auto R", false, KeyBind.BindTypes.HoldActive, 'G'));
 
             HarassSettings = Menu.AddSubMenu("Harass Settings", "HarassSettings");
             HarassSettings.Add("useQHarass", new CheckBox("Use Q"));
@@ -102,7 +103,7 @@ namespace JhinaMarksman
             ClearSettings.Add("useWJungle", new CheckBox("Use W"));
             ClearSettings.Add("useWJungleMana", new Slider("W Mana > %", 20, 0, 100));
             ClearSettings.AddSeparator();
-            ClearSettings.Add("RJungleSteal", new CheckBox("Jungle Steal(partially working now)"));
+            ClearSettings.Add("RJungleSteal", new CheckBox("Jungle Steal(partially working now)",false));
             ClearSettings.AddSeparator();
             ClearSettings.AddLabel("Epics");
             ClearSettings.Add("SRU_Baron", new CheckBox("Baron"));
@@ -137,12 +138,14 @@ namespace JhinaMarksman
             DrawMenu.Add("drawQ", new CheckBox("Draw Q Range"));
             DrawMenu.Add("drawW", new CheckBox("Draw W Range"));
             DrawMenu.Add("drawE", new CheckBox("Draw E Range"));
-            DrawMenu.Add("drawR", new CheckBox("Draw R Range"));
+            DrawMenu.Add("drawR", new CheckBox("Draw R Range",false));
+            DrawMenu.Add("drawStatus", new CheckBox("Draw R KeyBind"));
             DrawMenu.AddSeparator();
             DrawMenu.AddLabel("Damage Calculation");
             DrawMenu.Add("draw.Damage", new CheckBox("Draw Damage"));
             DrawMenu.Add("draw.Q", new CheckBox("Q Calculate"));
             DrawMenu.Add("draw.W", new CheckBox("W Calculate"));
+            DrawMenu.Add("draw.E", new CheckBox("E Calculate"));
             DrawMenu.Add("draw.R", new CheckBox("R Calculate"));
             DrawMenu.AddSeparator();
             DrawMenu.AddLabel("Recall Tracker");
@@ -159,7 +162,7 @@ namespace JhinaMarksman
             Interrupter.InterruptableSpellEventArgs e)
         {
             if (AutoSettings["interrupter"].Cast<CheckBox>().CurrentValue && sender.IsEnemy &&
-                e.DangerLevel == DangerLevel.High && sender.IsValidTarget(900))
+                e.DangerLevel >= DangerLevel.Medium && sender.IsValidTarget(900))
             {
                 E.Cast(sender);
             }
@@ -222,13 +225,10 @@ namespace JhinaMarksman
             {
                 //JungleClear();
             }
+            
             Auto();
             KS();
             AutoW();
-            if(_Player.Spellbook.ActiveSpellSlot == SpellSlot.R)
-            {
-                ultimate = true;
-            }
             if (HPpot && _Player.HealthPercent < HPv)
             {
                 if (Item.HasItem(Healthpot.Id) && Item.CanUseItem(Healthpot.Id) && !_Player.HasBuff("RegenerationPotion"))
@@ -236,26 +236,26 @@ namespace JhinaMarksman
                     Healthpot.Cast();
                 }
             }
-            if (ultimate == true)
-            {
-                Orbwalker.DisableMovement = true;
+        }
+
+        private static void UltiActive()
+        {
+            var target = TargetSelector.GetTarget(R1.Range, DamageType.Physical);
+            if (target == null) return;
+
+            Orbwalker.DisableMovement = true;
+
                 for (int i = 0; i <= 4; i++)
                 {
-                    var target = TargetSelector.GetTarget(R1.Range, DamageType.Physical);
-                    R1.Cast(target);
-                    ultimatecount = i;
-                    if(i == 4)
-                    {
+
+                        R1.Cast(target);
+                        ultimatecount = i;
+                        if (i == 4)
+                        {
                         ultimate = false;
-                        return;
-                    }
-                }
-                
-            }
-            if (ultimate == false)
-            {
-                Orbwalker.DisableMovement = false;
-            }
+                        }
+                                  
+                }        
         }
 
         private static void OnGameUpdate(EventArgs args)
@@ -263,6 +263,15 @@ namespace JhinaMarksman
             if (checkSkin())
             {
                 Player.SetSkinId(SkinId());
+            }
+            if (ComboSettings["RKey"].Cast<KeyBind>().CurrentValue)
+            {
+                UltiActive();
+            }
+            if(ultimate == false)
+            {
+                Orbwalker.DisableMovement = false;
+
             }
         }
 
@@ -333,7 +342,7 @@ namespace JhinaMarksman
             var useq = ClearSettings["useQLastHit"].Cast<CheckBox>().CurrentValue;
             var qcount = ClearSettings["LastHitQCount"].Cast<Slider>().CurrentValue;
             var autopassive = AutoSettings["UsePassive"].Cast<CheckBox>().CurrentValue;
-            var buff = Player.GetBuff("BuffName").Count;
+            var buff = Player.HasBuff("jhinpassiveattackbuff");
             var unit =
                     EntityManager.MinionsAndMonsters.GetLaneMinions()
                         .Where(
@@ -355,7 +364,7 @@ namespace JhinaMarksman
                                a => a.IsValidTarget(_Player.AttackRange))
                                .OrderBy(TargetSelector.GetPriority))
             {
-                if (autopassive && buff == 4)
+                if (autopassive && buff)
                 {
                     Orbwalker.ForcedTarget = enemy;
                     Harass();
@@ -427,8 +436,6 @@ namespace JhinaMarksman
             var Wmana = HarassSettings["useWHarassMana"].Cast<Slider>().CurrentValue;
             var Qmana = HarassSettings["useQHarassMana"].Cast<Slider>().CurrentValue;
 
-            Orbwalker.ForcedTarget = null;
-
             if (Orbwalker.IsAutoAttacking) return;
 
             if (targetW != null)
@@ -481,7 +488,7 @@ namespace JhinaMarksman
             if (ComboSettings["useQCombo"].Cast<CheckBox>().CurrentValue && Q.IsReady() && targetQ.IsValidTarget(Q.Range) &&
                 QDamage(targetQ) >= targetQ.Health)
             {
-                W.Cast(targetW);
+                Q.Cast(targetQ);
             }
             if (ComboSettings["useRCombo"].Cast<CheckBox>().CurrentValue && targetR.IsValidTarget(R.Range) && R.IsReady() && RDamage(targetR) >= targetR.Health)
             {
@@ -496,9 +503,8 @@ namespace JhinaMarksman
         public static void ComboMedium()
         {//COMBO MEDİUM PREDİCTİON START    
             var targetQ = TargetSelector.GetTarget(Q.Range, DamageType.Physical);
-            var qcount = HarassSettings["useQEnemyCount"].Cast<Slider>().CurrentValue;
             var targetE = TargetSelector.GetTarget(E.Range, DamageType.Physical);
-            var targetW = TargetSelector.GetTarget(W.Range, DamageType.Physical);
+            var targetW = TargetSelector.GetTarget(W.Range, DamageType.Mixed);
             var rtarget = TargetSelector.GetTarget(R.Range, DamageType.Physical);
             var mtarget = TargetSelector.GetTarget(700, DamageType.Physical);
             var useYoumu = Items["useYoumu"].Cast<CheckBox>().CurrentValue;
@@ -515,6 +521,16 @@ namespace JhinaMarksman
             if (useYoumu && Item.HasItem(3142) && Item.CanUseItem(3142))
                 Item.UseItem(3142);
 
+            // Q LOGİC
+            if (targetQ != null)
+            {
+                if (ComboSettings["useQCombo"].Cast<CheckBox>().CurrentValue &&
+                 Q.IsReady() && targetQ.IsValidTarget(Q.Range))
+                {
+                    Q.Cast(targetQ);
+                }
+            }
+
             // E LOGİC
 
             if (ComboSettings["useECombo"].Cast<CheckBox>().CurrentValue && (targetE.HasBuffOfType(BuffType.Snare) ||  targetE.HasBuffOfType(BuffType.Stun) || targetE.HasBuffOfType(BuffType.Fear) || targetE.HasBuffOfType(BuffType.Knockup) || targetE.HasBuffOfType(BuffType.Taunt)))
@@ -528,7 +544,7 @@ namespace JhinaMarksman
             }
 
             // W LOGİC
-            if (ComboSettings["useWCombo"].Cast<CheckBox>().CurrentValue &&  W.IsReady() && targetW.Distance(_Player) > _Player.AttackRange &&
+            if (ComboSettings["useWCombo"].Cast<CheckBox>().CurrentValue && W.IsReady() && !targetW.IsValidTarget(_Player.AttackRange) &&
                 targetW.IsValidTarget(W.Range))
             {
                 W.Cast(targetW);
@@ -541,15 +557,7 @@ namespace JhinaMarksman
                 }
             }
 
-            // Q LOGİC
-            if (targetQ != null)
-            {
-                    if (ComboSettings["useQCombo"].Cast<CheckBox>().CurrentValue &&
-                     Q.IsReady() && targetQ.IsValidTarget(Q.Range))
-                    {
-                        Q.Cast(targetQ);
-                    }
-            }
+           
 
         } //COMBO MEDİUM PREDİCTİON END
        
@@ -643,6 +651,11 @@ namespace JhinaMarksman
             if (DrawMenu["drawR"].Cast<CheckBox>().CurrentValue)
             {
                 Circle.Draw(R.IsReady() ? Color.Gray : Color.Red, R.Range, _Player.Position);
+            }
+            if (DrawMenu["drawStatus"].Cast<CheckBox>().CurrentValue)
+            {
+                var pos = Drawing.WorldToScreen(Player.Instance.Position);
+                Drawing.DrawText((int)pos.X - 45, (int)pos.Y + 40, System.Drawing.Color.Aqua, "R Key: G");
             }
         }
 
